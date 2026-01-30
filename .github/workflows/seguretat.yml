@@ -1,4 +1,4 @@
-name: Pipeline SecDevOps Node.js (Complex)
+name: Pipeline SecDevOps Completa (Node.js + Docker Hub)
 
 on:
   push:
@@ -10,27 +10,40 @@ jobs:
     steps:
       - name: Checkout del codi
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # ETAPA 1: Secrets (Gitleaks)
+      # ETAPA 1: Secrets
       - name: Gitleaks (Detecció de secrets)
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ETAPA 2: SCA (Trivy) - Escaneja el directori del projecte
-      - name: Trivy (Vulnerabilitats npm)
+      # ETAPA 2: SCA (Vulnerabilitats npm)
+      - name: Trivy (Escaneig de dependències)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           format: 'table'
           severity: 'HIGH,CRITICAL'
 
-      # ETAPA 3: SBOM (Syft) - Genera el fitxer CycloneDX
-      - name: Generar SBOM (CycloneDX)
+      # ETAPA 3: SBOM
+      - name: Generar SBOM (Syft)
         uses: anchore/sbom-action@v0
         with:
           path: .
           format: 'cyclonedx-json'
           artifact-name: 'sbom-node-project.json'
+
+      # ETAPA 4: Registre de Contenidors (Petició del Professor)
+      - name: Login a Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build i Push a Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # Substitueix 'usuari' pel teu nom de Docker Hub o usa la variable:
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/todolist-secdevops:latest
