@@ -15,11 +15,14 @@ jobs:
 
       - name: Sign image with Cosign
         run: |
+          # Aquesta línia fa el login específic per a l'eina Cosign
+          cosign login index.docker.io -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+          
+          # Ara signem la imatge forçant l'ús d'aquest login
           cosign sign --yes --tlog-upload=false --key env://COSIGN_PRIVATE_KEY ${{ secrets.DOCKERHUB_USERNAME }}/todolist-secdevops:latest
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-          COSIGN_EXPERIMENTAL: 1
           
       # ETAPA 1: Secrets
       - name: Gitleaks (Detecció de secrets)
